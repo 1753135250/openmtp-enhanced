@@ -16,7 +16,7 @@ const {
   bugs,
 } = pkginfo;
 
-export const APP_BUNDLE_ID = 'io.ganeshrvel.openmtp';
+export const APP_BUNDLE_ID = 'io.1753135250.openmtp.enhanced';
 
 export const APP_NAME = `${productName}`;
 

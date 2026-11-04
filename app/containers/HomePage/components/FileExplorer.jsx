@@ -97,6 +97,10 @@ import {
 } from '../../../templates/socialMediaShareBtns';
 import { baseName, pathInfo, pathUp, sanitizePath } from '../../../utils/files';
 import {
+  isValidTransferPath,
+  isValidPosixFilename,
+} from '../../../utils/fileNames';
+import {
   DEVICE_TYPE,
   FILE_EXPLORER_VIEW_TYPE,
   FILE_TRANSFER_DIRECTION,
@@ -1258,6 +1262,7 @@ class FileExplorer extends Component {
   _handleRenameEditDialog = async ({ ...args }) => {
     const {
       deviceType,
+      mtpMode,
       actionCreateRenameFile,
       hideHiddenFiles,
       currentBrowsePath,
@@ -1288,7 +1293,12 @@ class FileExplorer extends Component {
       return null;
     }
 
-    if (newFilename.trim() === '' || /[/\\?%*:|"<>]/g.test(newFilename)) {
+    if (
+      !isValidPosixFilename(
+        newFilename,
+        deviceType === DEVICE_TYPE.mtp && mtpMode === MTP_MODE.legacy
+      )
+    ) {
       this._handleErrorsEditDialog(
         {
           toggle: true,
@@ -1592,6 +1602,7 @@ class FileExplorer extends Component {
   _handleNewFolderEditDialog = async ({ ...args }) => {
     const {
       deviceType,
+      mtpMode,
       actionCreateNewFolder,
       hideHiddenFiles,
       currentBrowsePath,
@@ -1641,7 +1652,12 @@ class FileExplorer extends Component {
       return null;
     }
 
-    if (/[/\\?%*:|"<>]/g.test(newFolderName)) {
+    if (
+      !isValidPosixFilename(
+        newFolderName,
+        deviceType === DEVICE_TYPE.mtp && mtpMode === MTP_MODE.legacy
+      )
+    ) {
       this._handleErrorsEditDialog(
         {
           toggle: true,
@@ -1704,6 +1720,7 @@ class FileExplorer extends Component {
   _handlePaste = async () => {
     const {
       deviceType,
+      mtpMode,
       currentBrowsePath,
       storageId,
       fileTransferClipboard,
@@ -1719,7 +1736,7 @@ class FileExplorer extends Component {
       const _baseName = baseName(a);
       const fullPath = `${destinationFolder}/${_baseName}`;
 
-      if (fullPath.trim() === '' || /[\\:]/g.test(fullPath)) {
+      if (!isValidTransferPath(fullPath, mtpMode === MTP_MODE.legacy)) {
         invalidFileNameFlag = true;
       }
 
@@ -1733,7 +1750,7 @@ class FileExplorer extends Component {
 
     if (invalidFileNameFlag) {
       actionCreateThrowError({
-        message: `Invalid file name in the path. \\: characters are not allowed.`,
+        message: `Invalid file path. Use an absolute path without NUL characters. Colon and backslash require Kalam mode.`,
       });
 
       return null;
@@ -2282,6 +2299,7 @@ const mapDispatchToProps = (dispatch, _) =>
                 filePath,
                 ignoreHidden,
                 deviceType,
+                reconnect: true,
               },
               getState
             )

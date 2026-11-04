@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/ganeshrvel/go-mtpfs/mtp"
 	"github.com/ganeshrvel/go-mtpx"
 	jsoniter "github.com/json-iterator/go"
 	"kalam/send_to_js"
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -17,9 +19,13 @@ import (
 import "C"
 
 var container deviceContainer
+var operationMu sync.Mutex
+var selectedDeviceKey string
 
 //export Initialize
 func Initialize(onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -28,7 +34,7 @@ func Initialize(onDonePtr *C.on_cb_result_t) {
 		return
 	}
 
-	_, err := _initialize(mtpx.Init{DebugMode: false})
+	_, err := _initializeSelected()
 	if err != nil {
 		send_to_js.SendError(sendToJsOnDonePtr, err)
 
@@ -54,6 +60,8 @@ func Initialize(onDonePtr *C.on_cb_result_t) {
 
 //export FetchDeviceInfo
 func FetchDeviceInfo(onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -81,6 +89,8 @@ func FetchDeviceInfo(onDonePtr *C.on_cb_result_t) {
 
 //export FetchStorages
 func FetchStorages(onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -115,6 +125,8 @@ func _sendFetchStorages(retry bool, onDonePtr *send_to_js.SendCbResult) {
 
 //export MakeDirectory
 func MakeDirectory(makeDirectoryInputJson *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -144,6 +156,8 @@ func MakeDirectory(makeDirectoryInputJson *C.char, onDonePtr *C.on_cb_result_t) 
 
 //export FileExists
 func FileExists(fileExistsInputJson *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -181,6 +195,8 @@ func FileExists(fileExistsInputJson *C.char, onDonePtr *C.on_cb_result_t) {
 
 //export DeleteFile
 func DeleteFile(deleteFileInputJson *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -218,6 +234,8 @@ func DeleteFile(deleteFileInputJson *C.char, onDonePtr *C.on_cb_result_t) {
 
 //export RenameFile
 func RenameFile(renameFileInputJson *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -252,6 +270,8 @@ func RenameFile(renameFileInputJson *C.char, onDonePtr *C.on_cb_result_t) {
 
 //export Walk
 func Walk(walkInputJson *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -282,6 +302,8 @@ func Walk(walkInputJson *C.char, onDonePtr *C.on_cb_result_t) {
 
 //export UploadFiles
 func UploadFiles(uploadFilesInputJson *C.char, onPreprocessPtr, onProgressPtr, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnPreprocessPtr := (*send_to_js.SendCbResult)(onPreprocessPtr)
 	sendToJsOnProgressPtr := (*send_to_js.SendCbResult)(onProgressPtr)
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
@@ -370,6 +392,8 @@ func UploadFiles(uploadFilesInputJson *C.char, onPreprocessPtr, onProgressPtr, o
 
 //export DownloadFiles
 func DownloadFiles(downloadFilesInputJson *C.char, onPreprocessPtr, onProgressPtr, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnPreprocessPtr := (*send_to_js.SendCbResult)(onPreprocessPtr)
 	sendToJsOnProgressPtr := (*send_to_js.SendCbResult)(onProgressPtr)
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
@@ -457,6 +481,8 @@ func DownloadFiles(downloadFilesInputJson *C.char, onPreprocessPtr, onProgressPt
 
 //export Dispose
 func Dispose(onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
 	sendToJsOnDonePtr := (*send_to_js.SendCbResult)(onDonePtr)
 
 	if err := lockMtp(); err != nil {
@@ -478,3 +504,50 @@ func Dispose(onDonePtr *C.on_cb_result_t) {
 }
 
 func main() {}
+
+//export ListDevices
+func ListDevices(onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
+	devices, err := mtp.ListDeviceChoices()
+	ptr := (*send_to_js.SendCbResult)(onDonePtr)
+	if err != nil {
+		send_to_js.SendError(ptr, err)
+		return
+	}
+	send_to_js.SendData(ptr, devices)
+}
+
+//export SelectDevice
+func SelectDevice(key *C.char, onDonePtr *C.on_cb_result_t) {
+	operationMu.Lock()
+	defer operationMu.Unlock()
+	_ = _dispose()
+	container.dev = nil
+	container.deviceInfo = nil
+	selectedDeviceKey = C.GoString(key)
+	send_to_js.SendData((*send_to_js.SendCbResult)(onDonePtr), true)
+}
+
+func _initializeSelected() (*mtp.Device, error) {
+	if err := _dispose(); err != nil {
+		return nil, err
+	}
+	container.dev = nil
+	container.deviceInfo = nil
+	if selectedDeviceKey == "" {
+		return _initialize(mtpx.Init{DebugMode: false})
+	}
+	dev, err := mtp.SelectDeviceByKey(selectedDeviceKey)
+	if err != nil {
+		return nil, err
+	}
+	dev.Timeout = 15000
+	if err := dev.Configure(); err != nil {
+		dev.Close()
+		dev.Done()
+		return nil, err
+	}
+	container.dev = dev
+	return dev, nil
+}

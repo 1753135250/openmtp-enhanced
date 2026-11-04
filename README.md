@@ -1,3 +1,12 @@
+# OpenMTP Enhanced
+
+Personal Apple Silicon preview with Android device selection, Unicode filename fixes,
+and retrying missed Samsung MTP authorization prompts without unplugging.
+
+See [ENHANCED.md](ENHANCED.md) for recovery behavior, requirements, build instructions and validation limits.
+
+---
+
 # OpenMTP | Android File Transfer for macOS
 
 - Author: [Ganesh Rathinavel](https://www.linkedin.com/in/ganeshrvel 'Ganesh Rathinavel')

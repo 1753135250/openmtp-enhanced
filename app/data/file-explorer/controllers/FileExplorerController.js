@@ -126,10 +126,13 @@ class FileExplorerController {
    *
    * @return {Promise<{data: object, error: string|null, stderr: string|null}>}
    */
-  async initialize({ deviceType }) {
+  async initialize({ deviceType, recoverAccess = false }) {
     checkIf(deviceType, 'string');
 
-    const result = await this.repository.initialize({ deviceType });
+    const result = await this.repository.initialize({
+      deviceType,
+      recoverAccess,
+    });
 
     this._sentEvent({ result, deviceType, eventKey: 'INITIALIZE' });
 

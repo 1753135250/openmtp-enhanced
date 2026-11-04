@@ -56,7 +56,7 @@ func _fetchDeviceInfo() (*mtp.DeviceInfo, error) {
 
 	dInfo, err := mtpx.FetchDeviceInfo(container.dev)
 	if err != nil {
-		container.deviceInfo = nil
+		_ = _dispose()
 
 		return nil, err
 	}
@@ -184,6 +184,9 @@ func _dispose() error {
 	}
 
 	mtpx.Dispose(container.dev)
+	container.dev.Done()
+	container.dev = nil
+	container.deviceInfo = nil
 
 	return nil
 }

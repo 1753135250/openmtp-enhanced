@@ -35,6 +35,35 @@ export class Kalam {
     });
   }
 
+  async deviceCall(name, key) {
+    return new Promise((resolve) => {
+      let callback;
+
+      try {
+        callback = koffi.register((result) => {
+          try {
+            resolve(this._getData(JSON.parse(result)));
+          } catch (error) {
+            resolve(this._getNapiError(error));
+          }
+        }, koffi.pointer(this.callbackDictionary.onCbResult));
+        const signature =
+          name === 'ListDevices'
+            ? 'void ListDevices(on_cb_result_t* cb)'
+            : 'void SelectDevice(char* key, on_cb_result_t* cb)';
+        const args = name === 'ListDevices' ? [callback] : [key, callback];
+
+        this.lib.func(signature).async(...args, (error) => {
+          koffi.unregister(callback);
+          if (error) resolve(this._getNapiError(error));
+        });
+      } catch (error) {
+        if (callback) koffi.unregister(callback);
+        resolve(this._getNapiError(error));
+      }
+    });
+  }
+
   _getNapiError(error) {
     return {
       error,

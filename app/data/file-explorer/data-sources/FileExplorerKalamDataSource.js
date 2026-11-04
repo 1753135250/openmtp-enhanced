@@ -1,5 +1,10 @@
 import { exec } from 'child_process';
 import { promisify } from 'node:util';
+import {
+  recoverMtpAccess,
+  setMtpAccessStatus,
+} from '../../../services/mtpAccessRecovery';
+import { chooseMtpDevice } from '../../../services/mtpDeviceSelection';
 import { log } from '../../../utils/log';
 import { Kalam } from '../../../../ffi/kalam/src/Kalam';
 import { checkIf } from '../../../utils/checkIf';
@@ -41,8 +46,43 @@ export class FileExplorerKalamDataSource {
    *
    * @return {Promise<{data: object, error: string|null, stderr: string|null}>}
    */
-  async initialize() {
+  async initialize({ recoverAccess = false } = {}) {
+    this.recoverOnNoStorage = recoverAccess;
     try {
+      const devices = await this.kalamFfi.deviceCall('ListDevices');
+
+      if (devices.error) return devices;
+      const choices = devices.data || [];
+
+      if (!choices.length) {
+        this.selectedDeviceKey = null;
+        await this.kalamFfi.dispose();
+
+        return { error: 'No MTP devices found', stderr: null, data: null };
+      }
+
+      if (!choices.some((d) => d.key === this.selectedDeviceKey)) {
+        const key =
+          choices.length === 1
+            ? choices[0].key
+            : await chooseMtpDevice(choices);
+
+        if (!key)
+          return {
+            error: 'Device selection cancelled',
+            stderr: null,
+            data: null,
+          };
+        const result = await this.kalamFfi.deviceCall('SelectDevice', key);
+
+        if (result.error) return result;
+        this.selectedDeviceKey = key;
+      }
+
+      this.selectedDeviceChoice = choices.find(
+        (d) => d.key === this.selectedDeviceKey
+      );
+
       return this.kalamFfi.initialize();
     } catch (e) {
       log.error(e);
@@ -54,6 +94,78 @@ export class FileExplorerKalamDataSource {
       };
     }
   }
+
+  /* eslint-disable no-await-in-loop -- USB rediscovery and permission polling are sequential. */
+  async _rebindSelectedDevice(chosen, deadline) {
+    await this.kalamFfi.dispose();
+    while (Date.now() < deadline) {
+      const devices = await this.kalamFfi.deviceCall('ListDevices');
+      const matches = (devices.data || []).filter(
+        (d) =>
+          d.serial === chosen.serial &&
+          d.vendorId === chosen.vendorId &&
+          d.productId === chosen.productId
+      );
+
+      if (matches.length > 1)
+        throw new Error('发现重复设备标识，请手动选择手机。');
+      if (matches.length === 1) {
+        const [match] = matches;
+        const selected = await this.kalamFfi.deviceCall(
+          'SelectDevice',
+          match.key
+        );
+
+        if (selected.error) throw new Error(String(selected.error));
+        this.selectedDeviceKey = match.key;
+        this.selectedDeviceChoice = match;
+        const opened = await this.kalamFfi.initialize();
+
+        if (!opened.error) return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+
+    throw new Error('所选手机尚未重新连接，请稍后刷新。');
+  }
+
+  async _recoverStorageAccess() {
+    const chosen = this.selectedDeviceChoice;
+    const closed = await this.kalamFfi.dispose();
+
+    if (closed?.error) throw new Error(String(closed.error));
+    await recoverMtpAccess(chosen);
+    const permissionDeadline = Date.now() + 60000;
+
+    await this._rebindSelectedDevice(
+      chosen,
+      Math.min(permissionDeadline, Date.now() + 10000)
+    );
+    let result;
+
+    do {
+      result = await this.kalamFfi.listStorages();
+      if (!result.error) break;
+      if (
+        /LIBUSB_ERROR_NO_DEVICE|ErrorMtpDetectFailed|EOF/.test(
+          String(result.error)
+        )
+      ) {
+        setMtpAccessStatus('正在等待所选手机重新连接…');
+        await this._rebindSelectedDevice(chosen, permissionDeadline);
+      } else if (result.stderr !== 'ErrorNoStorage') break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    } while (Date.now() < permissionDeadline);
+
+    setMtpAccessStatus(
+      result.error ? '尚未允许访问，可再次点击刷新重新请求手机授权。' : ''
+    );
+
+    return result;
+  }
+
+  /* eslint-enable no-await-in-loop */
 
   /**
    * description - Dispose Kalam MTP
@@ -81,7 +193,21 @@ export class FileExplorerKalamDataSource {
    */
   async listStorages() {
     try {
-      const { error, stderr, data } = await this.kalamFfi.listStorages();
+      let result = await this.kalamFfi.listStorages();
+      const shouldRecover = this.recoverOnNoStorage;
+
+      this.recoverOnNoStorage = false;
+      if (shouldRecover && result.error && result.stderr === 'ErrorNoStorage') {
+        try {
+          result = await this._recoverStorageAccess();
+        } catch (error) {
+          setMtpAccessStatus(error.message);
+
+          return { error: error.message, stderr: 'ErrorNoStorage', data: null };
+        }
+      }
+
+      const { error, stderr, data } = result;
 
       if (error || stderr || !data) {
         return { error, stderr, data };

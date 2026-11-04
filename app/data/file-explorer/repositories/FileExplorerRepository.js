@@ -17,7 +17,7 @@ export class FileExplorerRepository {
    *
    * @return {Promise<{data: object, error: string|null, stderr: string|null}>}
    */
-  async initialize({ deviceType }) {
+  async initialize({ deviceType, recoverAccess = false }) {
     const selectedMtpMode = getMtpModeSetting();
 
     checkIf(deviceType, 'string');
@@ -29,7 +29,7 @@ export class FileExplorerRepository {
 
         case MTP_MODE.kalam:
         default:
-          return this.kalamMtpDataSource.initialize();
+          return this.kalamMtpDataSource.initialize({ recoverAccess });
       }
     }
 

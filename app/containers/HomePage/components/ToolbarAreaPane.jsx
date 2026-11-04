@@ -41,6 +41,7 @@ import {
 import { selectMtpMode, toggleSettings } from '../../Settings/actions';
 import { toggleWindowSizeOnDoubleClick } from '../../../helpers/titlebarDoubleClick';
 import ToolbarBody from './ToolbarBody';
+import MtpDevicePicker from './MtpDevicePicker';
 import { openExternalUrl } from '../../../utils/url';
 import { APP_GITHUB_URL } from '../../../constants/meta';
 import { pathUp } from '../../../utils/files';
@@ -385,6 +386,7 @@ class ToolbarAreaPane extends PureComponent {
 
     return (
       <Fragment>
+        {deviceType === DEVICE_TYPE.mtp && <MtpDevicePicker />}
         <ToolbarBody
           styles={styles}
           directoryLists={directoryLists}
@@ -439,6 +441,7 @@ const mapDispatchToProps = (dispatch, _) =>
                 filePath,
                 ignoreHidden,
                 deviceType,
+                reconnect: true,
               },
               getState
             )

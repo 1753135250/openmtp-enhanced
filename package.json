@@ -1,8 +1,8 @@
 {
   "name": "openmtp",
-  "productName": "OpenMTP",
-  "version": "3.3.0",
-  "description": "OpenMTP | Android File Transfer for macOS",
+  "productName": "OpenMTP Enhanced",
+  "version": "3.3.1-enhanced.4",
+  "description": "OpenMTP Enhanced | Unicode filenames and selectable Android devices",
   "scripts": {
     "build": "yarn lint && concurrently \"yarn build-main\" \"yarn build-renderer\"",
     "build-no-verify": "concurrently \"yarn build-main\" \"yarn build-renderer\"",
@@ -34,12 +34,15 @@
     "postlint-fix": "prettier --ignore-path .eslintignore --single-quote --write '**/*.*{js,jsx,json}'",
     "postlint-styles-fix": "prettier --ignore-path .eslintignore --single-quote --write '**/*.{css,scss}'",
     "preinstall": "internals/scripts/preinstall.sh",
-    "postinstall": "yarn build-dll && electron-builder install-app-deps"
+    "postinstall": "yarn build-dll && electron-builder install-app-deps",
+    "test:mtp": "cd third_party/go-mtpfs && go test ./mtp -run \"TestUnicode|TestEncode|TestDecode\" -count=1",
+    "build:native": "./scripts/build-enhanced-native.sh",
+    "build-enhanced": "yarn build:native && yarn build-no-verify"
   },
   "main": "./app/main.prod.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ganeshrvel/openmtp.git"
+    "url": "git+https://github.com/1753135250/openmtp-enhanced.git"
   },
   "author": {
     "name": "Ganesh Rathinavel",
@@ -48,7 +51,7 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ganeshrvel/openmtp/issues/"
+    "url": "https://github.com/1753135250/openmtp-enhanced/issues"
   },
   "keywords": [
     "openmtp",
@@ -233,10 +236,5 @@
     "decode-uri-component": "^0.2.2",
     "qs": "^6.5.3",
     "json5": "^1.0.2"
-  },
-  "devEngines": {
-    "node": ">=16.x",
-    "npm": ">=6.x <=8.16.0",
-    "yarn": ">=0.21.3"
   }
 }

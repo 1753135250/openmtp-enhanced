@@ -36,8 +36,8 @@ class WhatsNew extends PureComponent {
               <CheckCircleIcon htmlColor="#4caf50" />
             </ListItemIcon>
             <ListItemText
-              primary="Added support for macOS 27 Golden Gate"
-              secondary="Fixes a crash on launch on macOS 27 Golden Gate"
+              primary="Unicode filenames"
+              secondary="Preserves emoji and supplementary CJK characters in Kalam mode."
             />
           </ListItem>
 
@@ -46,8 +46,8 @@ class WhatsNew extends PureComponent {
               <NewReleasesIcon htmlColor="#ff9800" />
             </ListItemIcon>
             <ListItemText
-              primary={`The next generation of ${APP_NAME} is on its way`}
-              secondary="A major upgrade with new features, and big improvements to overall stability and performance is in the works and coming soon. Stay tuned, thanks for all the support!"
+              primary="Select an Android device"
+              secondary="Choose the phone to browse when multiple Android devices are connected. This preview still requires two-device transfer testing."
             />
           </ListItem>
 

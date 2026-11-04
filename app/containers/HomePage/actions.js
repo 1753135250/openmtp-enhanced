@@ -69,7 +69,7 @@ export function setCurrentBrowsePath(path, deviceType) {
   };
 }
 
-function actionListDirectory(data, deviceType, _) {
+export function actionListDirectory(data, deviceType, _) {
   return {
     type: actionTypes.LIST_DIRECTORY,
     deviceType,
@@ -116,6 +116,7 @@ export function initializeMtp(
     ignoreHidden,
     changeLegacyMtpStorageOnlyOnDeviceChange,
     deviceType,
+    recoverAccess = false,
   },
   getState
 ) {
@@ -138,6 +139,7 @@ export function initializeMtp(
                 filePath,
                 ignoreHidden,
                 deviceType,
+                recoverAccess,
               },
               getState
             )
@@ -237,7 +239,10 @@ export function disposeMtp({ deviceType, onSuccess, onError }, getState) {
   };
 }
 
-function initKalamMtp({ filePath, ignoreHidden, deviceType }, getState) {
+function initKalamMtp(
+  { filePath, ignoreHidden, deviceType, recoverAccess = false },
+  getState
+) {
   return async (dispatch) => {
     checkIf(filePath, 'string');
     checkIf(ignoreHidden, 'boolean');
@@ -259,6 +264,7 @@ function initKalamMtp({ filePath, ignoreHidden, deviceType }, getState) {
       // then don't reinitialize mtp
       const { error, stderr, data } = await fileExplorerController.initialize({
         deviceType,
+        recoverAccess,
       });
 
       await new Promise((resolve) => {
@@ -717,7 +723,7 @@ export function listDirectory(
 }
 
 export function reloadDirList(
-  { filePath, ignoreHidden, deviceType },
+  { filePath, ignoreHidden, deviceType, reconnect = false },
   getState
 ) {
   checkIf(deviceType, 'inObjectValues', DEVICE_TYPE);
@@ -725,11 +731,37 @@ export function reloadDirList(
   checkIf(ignoreHidden, 'boolean');
   checkIf(getState, 'function');
 
-  const { mtpMode, mtpDevice } = getState().Home;
+  const { mtpDevice } = getState().Home;
+  const { mtpMode } = getState().Settings;
 
   checkIf(mtpDevice, 'object');
 
   return (dispatch) => {
+    if (
+      reconnect &&
+      deviceType === DEVICE_TYPE.mtp &&
+      mtpMode === MTP_MODE.kalam
+    ) {
+      if (
+        getState().Home.fileTransfer?.progress?.toggle ||
+        getState().Home.mtpDevice.isLoading
+      )
+        return;
+
+      return dispatch(
+        initializeMtp(
+          {
+            filePath,
+            ignoreHidden,
+            deviceType,
+            changeLegacyMtpStorageOnlyOnDeviceChange: true,
+            recoverAccess: true,
+          },
+          getState
+        )
+      );
+    }
+
     switch (deviceType) {
       case DEVICE_TYPE.local:
         return dispatch(

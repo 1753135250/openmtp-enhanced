@@ -19,6 +19,7 @@ import (
 	"github.com/ganeshrvel/go-mtpfs/mtp"
 	"github.com/ganeshrvel/go-mtpx"
 	"os"
+ "unsafe"
 	"time"
 )
 
@@ -242,4 +243,12 @@ func SendDispose(onDonePtr *SendCbResult) {
 
 	convertedDoneCbPtr := (*C.on_cb_result_t)(onDonePtr)
 	C.send_cb_result(convertedDoneCbPtr, C.CString(json))
+}
+
+// SendData sends a JSON-compatible response through the existing FFI callback.
+func SendData(ptr *SendCbResult, data interface{}) {
+ json := toJson(map[string]interface{}{"data": data, "error": "", "errorType": ""})
+ value := C.CString(json)
+ defer C.free(unsafe.Pointer(value))
+ C.send_cb_result((*C.on_cb_result_t)(ptr), value)
 }
