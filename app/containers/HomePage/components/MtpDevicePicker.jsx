@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
+import Tooltip from '@material-ui/core/Tooltip';
+import Snackbar from '@material-ui/core/Snackbar';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
 import Selection from '../../../components/DialogBox/components/Selection';
 import fileExplorerController from '../../../data/file-explorer/controllers/FileExplorerController';
 import {
@@ -12,7 +16,7 @@ import {
 } from '../actions';
 import { DEVICE_TYPE, MTP_MODE } from '../../../enums';
 
-function MtpDevicePicker({ dispatch, home, settings }) {
+function MtpDevicePicker({ dispatch, home, settings, styles }) {
   const [request, setRequest] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -97,18 +101,37 @@ function MtpDevicePicker({ dispatch, home, settings }) {
   if (settings.mtpMode !== MTP_MODE.kalam) return null;
 
   return (
-    <div style={{ padding: '4px 12px' }}>
-      <Button
-        size="small"
-        onClick={switchDevice}
-        disabled={
-          busy || home.fileTransfer.progress.toggle || home.mtpDevice.isLoading
-        }
-      >
-        Select Android device
-      </Button>
-      {error && <span role="alert">{error}</span>}
-      {accessStatus && <span role="status">{accessStatus}</span>}
+    <React.Fragment>
+      <Tooltip title="Switch Android device">
+        <div className={`${styles.navBtns} ${styles.noAppDrag}`}>
+          <IconButton
+            aria-label="Switch Android device"
+            onClick={switchDevice}
+            disabled={
+              busy ||
+              home.fileTransfer.progress.toggle ||
+              home.mtpDevice.isLoading
+            }
+          >
+            <FontAwesomeIcon
+              icon={faExchangeAlt}
+              className={styles.navBtnIcons}
+            />
+          </IconButton>
+        </div>
+      </Tooltip>
+      <Snackbar
+        key={error || accessStatus}
+        open={Boolean(error || accessStatus)}
+        message={error || accessStatus}
+        autoHideDuration={error ? 6000 : 10000}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        ContentProps={{ role: error ? 'alert' : 'status' }}
+        onClose={() => {
+          setError('');
+          setAccessStatus('');
+        }}
+      />
       <Selection
         titleText="Select Android device"
         showAvatar={false}
@@ -124,7 +147,7 @@ function MtpDevicePicker({ dispatch, home, settings }) {
           current?.finish(selectedValue);
         }}
       />
-    </div>
+    </React.Fragment>
   );
 }
 

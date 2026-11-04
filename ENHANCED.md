@@ -1,4 +1,4 @@
-# OpenMTP Enhanced 3.3.1-enhanced.4
+# OpenMTP Enhanced 3.3.1-enhanced.5
 
 Apple Silicon preview derived from https://github.com/ganeshrvel/openmtp (MIT).
 Recovered from upstream source and the installed preview 3 source maps after the
@@ -60,3 +60,10 @@ unverified. Unit tests cover the recovery and device-selection gates.
 
 Prebuilt Apple Silicon Kalam dylibs/headers are included alongside their Go source.
 Run `yarn build:native` to rebuild them before packaging after native source changes.
+
+## Preview 5 toolbar layout
+
+The device picker is an exchange-arrow icon in the existing Android toolbar,
+between Delete and Storage. Its tooltip and accessible name identify device
+switching. Recovery and error messages use a transient notification rather than
+adding another toolbar row.

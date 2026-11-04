@@ -13,6 +13,7 @@ import {
   faTerminal,
 } from '@fortawesome/free-solid-svg-icons';
 import SidebarAreaPaneLists from './SidebarAreaPaneLists';
+import MtpDevicePicker from './MtpDevicePicker';
 import { LazyLoaderOverlay } from '../styles/ToolbarAreaPane';
 import { DEVICES_LABEL } from '../../../constants';
 import {
@@ -249,36 +250,41 @@ export default class ToolbarAreaPane extends PureComponent {
                 const item = _toolbarList[a];
 
                 return (
-                  <Tooltip key={a} title={item.label}>
-                    <div className={`${styles.navBtns} ${styles.noAppDrag}`}>
-                      <IconButton
-                        aria-label={item.label}
-                        disabled={!item.enabled}
-                        onClick={() => onToolbarAction(a)}
-                        className={classNames({
-                          [styles.disabledNavBtns]: !item.enabled,
-                          [styles.invertedNavBtns]: item.invert,
-                          [styles.imageBtn]: item.image,
-                        })}
-                      >
-                        {item.image && (
-                          <img
-                            alt={item.label}
-                            src={imgsrc(item.image, false)}
-                            className={styles.navBtnImages}
-                          />
-                        )}
+                  <React.Fragment key={a}>
+                    {deviceType === DEVICE_TYPE.mtp && a === 'storage' && (
+                      <MtpDevicePicker styles={styles} />
+                    )}
+                    <Tooltip title={item.label}>
+                      <div className={`${styles.navBtns} ${styles.noAppDrag}`}>
+                        <IconButton
+                          aria-label={item.label}
+                          disabled={!item.enabled}
+                          onClick={() => onToolbarAction(a)}
+                          className={classNames({
+                            [styles.disabledNavBtns]: !item.enabled,
+                            [styles.invertedNavBtns]: item.invert,
+                            [styles.imageBtn]: item.image,
+                          })}
+                        >
+                          {item.image && (
+                            <img
+                              alt={item.label}
+                              src={imgsrc(item.image, false)}
+                              className={styles.navBtnImages}
+                            />
+                          )}
 
-                        {item.icon && (
-                          <FontAwesomeIcon
-                            icon={item.icon}
-                            className={styles.navBtnIcons}
-                            title={item.label}
-                          />
-                        )}
-                      </IconButton>
-                    </div>
-                  </Tooltip>
+                          {item.icon && (
+                            <FontAwesomeIcon
+                              icon={item.icon}
+                              className={styles.navBtnIcons}
+                              title={item.label}
+                            />
+                          )}
+                        </IconButton>
+                      </div>
+                    </Tooltip>
+                  </React.Fragment>
                 );
               })}
             </div>

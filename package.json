@@ -1,7 +1,7 @@
 {
   "name": "openmtp",
   "productName": "OpenMTP Enhanced",
-  "version": "3.3.1-enhanced.4",
+  "version": "3.3.1-enhanced.5",
   "description": "OpenMTP Enhanced | Unicode filenames and selectable Android devices",
   "scripts": {
     "build": "yarn lint && concurrently \"yarn build-main\" \"yarn build-renderer\"",
